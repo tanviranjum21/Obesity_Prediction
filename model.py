@@ -1,10 +1,10 @@
 import pickle
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import StandardScaler, LabelEncoder, MinMaxScaler
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, accuracy_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 
 # Constants
 TRAIN_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Dataset/train.csv"
@@ -133,15 +133,20 @@ if __name__ == "__main__":
     y = train_dataset['NObeyesdad']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
-    best_params = {
-        'bootstrap': True,
-        'criterion': 'gini',
-        'max_depth': 10,
-        'max_features': 0.48231592334473916,
-        'min_samples_leaf': 1,
-        'min_samples_split': 15,
-        'n_estimators': 100
+    # Hyperparameter tuning using GridSearchCV
+    param_grid = {
+        'n_estimators': [100, 200, 300],
+        'max_depth': [None, 10, 20],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['auto', 'sqrt', 'log2']
     }
+
+    grid_search = GridSearchCV(RandomForestClassifier(random_state=66), param_grid, cv=3, verbose=2, n_jobs=-1)
+    grid_search.fit(X_train, y_train)
+
+    best_params = grid_search.best_params_
+    print("Best Parameters:", best_params)
 
     predictor.model = predictor.train_model(X_train, y_train, best_params)
     predictor.save_model(predictor.model, MODEL_FILE_PATH)
