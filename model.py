@@ -12,6 +12,7 @@ TEST_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Da
 MODEL_FILE_PATH = "model.pkl"
 
 
+
 class ObesityPredictor:
     def __init__(self):
         """
@@ -34,7 +35,8 @@ class ObesityPredictor:
         """
         train_dataset = pd.read_csv(train_file_path)
         test_dataset = pd.read_csv(test_file_path)
-        return train_dataset, test_dataset
+        ids = test_dataset['id']
+        return train_dataset, test_dataset, ids
 
     def preprocess_data(self, train_dataset, test_dataset):
         """
@@ -127,7 +129,7 @@ class ObesityPredictor:
 
 if __name__ == "__main__":
     predictor = ObesityPredictor()
-    train_dataset, test_dataset = predictor.load_data(TRAIN_FILE_PATH, TEST_FILE_PATH)
+    train_dataset, test_dataset, ids = predictor.load_data(TRAIN_FILE_PATH, TEST_FILE_PATH)
     train_dataset, test_dataset = predictor.preprocess_data(train_dataset, test_dataset)
     X = train_dataset.drop('NObeyesdad', axis=1)
     y = train_dataset['NObeyesdad']
@@ -155,5 +157,19 @@ if __name__ == "__main__":
     print("Accuracy:", accuracy)
     print("\nClassification Report:\n", classification_rep)
 
-    submission_df = predictor.predict(predictor.model, test_dataset, test_dataset.index)
+    submission_df = predictor.predict(predictor.model, test_dataset, ids)
     print(submission_df.head())
+
+    decoding_mapping = {
+        0: "Insufficient_Weight",
+        1: "Normal_Weight",
+        2: "Obesity_Type_I",
+        3: "Obesity_Type_II",
+        4: "Obesity_Type_III",
+        5: "Overweight_Level_I",
+        6: "Overweight_Level_II",
+    }
+    submission_df["NObeyesdad"] = submission_df["NObeyesdad"].map(decoding_mapping)
+
+    # Saving Submission File
+    submission_df.to_csv('submission.csv', index=False)
