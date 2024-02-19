@@ -149,5 +149,16 @@ if __name__ == "__main__":
     submission_df = predictor.predict(predictor.model, test_dataset, ids)
     print(submission_df.head())
 
+    decoding_mapping = {
+        0: "Insufficient_Weight",
+        1: "Normal_Weight",
+        2: "Obesity_Type_I",
+        3: "Obesity_Type_II",
+        4: "Obesity_Type_III",
+        5: "Overweight_Level_I",
+        6: "Overweight_Level_II",
+    }
+    submission_df["NObeyesdad"] = submission_df["NObeyesdad"].map(decoding_mapping)
+
     # Saving Submission File
     submission_df.to_csv('submission.csv', index=False)
