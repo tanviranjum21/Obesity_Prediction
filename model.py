@@ -124,6 +124,9 @@ class ObesityPredictor:
         Returns:
         DataFrame: DataFrame containing predictions.
         """
+        # Align the columns of the test dataset with the training dataset
+        test_dataset = test_dataset.reindex(columns=X.columns, fill_value=0)
+
         predictions = model.predict(test_dataset)
         submission_df = pd.DataFrame({"id": ids, "NObeyesdad": predictions})
         return submission_df
