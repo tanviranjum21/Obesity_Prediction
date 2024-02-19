@@ -2,14 +2,15 @@ import pandas as pd
 import numpy as np
 import pickle
 from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split, GridSearchCV
+import xgboost as xgb
 
 # Constants
 TRAIN_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Dataset/train.csv"
 TEST_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Dataset/test.csv"
 MODEL_FILE_PATH = "model.pkl"
+
 
 class ObesityPredictor:
     def __init__(self):
@@ -71,25 +72,33 @@ class ObesityPredictor:
 
     def train_model(self, X_train, y_train):
         """
-        Train a Gradient Boosting model.
+        Train a XGBoost model with hyperparameter tuning using GridSearchCV.
 
         Args:
         X_train (DataFrame): Features of the training dataset.
         y_train (Series): Labels of the training dataset.
 
         Returns:
-        GradientBoostingClassifier: Trained Gradient Boosting model.
+        GridSearchCV: Trained GridSearchCV object.
         """
-        model = GradientBoostingClassifier(n_estimators=300, learning_rate=0.1, max_depth=5, random_state=42)
-        model.fit(X_train, y_train)
-        return model
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'learning_rate': [0.05, 0.1, 0.2],
+            'max_depth': [3, 4, 5]
+        }
+
+        model = xgb.XGBClassifier(objective='multi:softmax', num_class=7, random_state=42)
+        grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=3, scoring='accuracy', verbose=2)
+        grid_search.fit(X_train, y_train)
+        self.model = grid_search.best_estimator_
+        return grid_search
 
     def save_model(self, model, file_path):
         """
         Save the trained model to a file.
 
         Args:
-        model (GradientBoostingClassifier): Trained Gradient Boosting model.
+        model (GridSearchCV): Trained GridSearchCV object.
         file_path (str): File path to save the model.
         """
         with open(file_path, "wb") as f:
@@ -100,7 +109,7 @@ class ObesityPredictor:
         Evaluate the trained model.
 
         Args:
-        model (GradientBoostingClassifier): Trained Gradient Boosting model.
+        model (GridSearchCV): Trained GridSearchCV object.
         X_test (DataFrame): Features of the test dataset.
         y_test (Series): Labels of the test dataset.
 
@@ -117,7 +126,7 @@ class ObesityPredictor:
         Make predictions using the trained model.
 
         Args:
-        model (GradientBoostingClassifier): Trained Gradient Boosting model.
+        model (GridSearchCV): Trained GridSearchCV object.
         test_dataset (DataFrame): Test dataset.
         ids (array-like): Array of IDs for the test dataset.
 
@@ -131,6 +140,7 @@ class ObesityPredictor:
         submission_df = pd.DataFrame({"id": ids, "NObeyesdad": predictions})
         return submission_df
 
+
 if __name__ == "__main__":
     predictor = ObesityPredictor()
     train_dataset, test_dataset, ids = predictor.load_data(TRAIN_FILE_PATH, TEST_FILE_PATH)
@@ -139,14 +149,14 @@ if __name__ == "__main__":
     y = train_dataset['NObeyesdad']
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
 
-    predictor.model = predictor.train_model(X_train, y_train)
-    predictor.save_model(predictor.model, MODEL_FILE_PATH)
+    grid_search = predictor.train_model(X_train, y_train)
+    predictor.save_model(grid_search, MODEL_FILE_PATH)
 
-    accuracy, classification_rep = predictor.evaluate_model(predictor.model, X_test, y_test)
+    accuracy, classification_rep = predictor.evaluate_model(grid_search, X_test, y_test)
     print("Accuracy:", accuracy)
     print("\nClassification Report:\n", classification_rep)
 
-    submission_df = predictor.predict(predictor.model, test_dataset, ids)
+    submission_df = predictor.predict(grid_search, test_dataset, ids)
     print(submission_df.head())
 
     decoding_mapping = {
