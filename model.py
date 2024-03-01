@@ -1,11 +1,4 @@
-import pandas as pd
-import numpy as np
-import pickle
-from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-from sklearn.metrics import accuracy_score, classification_report
-from sklearn.model_selection import train_test_split, GridSearchCV
-import xgboost as xgb
-
+from config import *
 # Constants
 TRAIN_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Dataset/train.csv"
 TEST_FILE_PATH = "/Users/tanvir/Desktop/ML_Project/Obesity_Prediction_Project/Dataset/test.csv"
@@ -139,36 +132,3 @@ class ObesityPredictor:
         predictions = model.predict(test_dataset)
         submission_df = pd.DataFrame({"id": ids, "NObeyesdad": predictions})
         return submission_df
-
-
-if __name__ == "__main__":
-    predictor = ObesityPredictor()
-    train_dataset, test_dataset, ids = predictor.load_data(TRAIN_FILE_PATH, TEST_FILE_PATH)
-    train_dataset, test_dataset = predictor.preprocess_data(train_dataset, test_dataset)
-    X = train_dataset.drop('NObeyesdad', axis=1)
-    y = train_dataset['NObeyesdad']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
-
-    grid_search = predictor.train_model(X_train, y_train)
-    predictor.save_model(grid_search, MODEL_FILE_PATH)
-
-    accuracy, classification_rep = predictor.evaluate_model(grid_search, X_test, y_test)
-    print("Accuracy:", accuracy)
-    print("\nClassification Report:\n", classification_rep)
-
-    submission_df = predictor.predict(grid_search, test_dataset, ids)
-    print(submission_df.head())
-
-    decoding_mapping = {
-        0: "Insufficient_Weight",
-        1: "Normal_Weight",
-        2: "Obesity_Type_I",
-        3: "Obesity_Type_II",
-        4: "Obesity_Type_III",
-        5: "Overweight_Level_I",
-        6: "Overweight_Level_II",
-    }
-    submission_df["NObeyesdad"] = submission_df["NObeyesdad"].map(decoding_mapping)
-
-    # Saving Submission File
-    submission_df.to_csv('submission.csv', index=False)
